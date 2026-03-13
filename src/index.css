@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .markdown-body {
+    @apply text-sm leading-relaxed;
+  }
+  .markdown-body p {
+    @apply mb-2 last:mb-0;
+  }
+  .markdown-body strong {
+    @apply font-bold text-neutral-900;
+  }
+  .markdown-body ul {
+    @apply list-disc pl-5 mb-2;
+  }
+  .markdown-body ol {
+    @apply list-decimal pl-5 mb-2;
+  }
+  .markdown-body li {
+    @apply mb-1;
+  }
+}
