@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, CircleCheck as CheckCircle, CircleAlert as AlertCircle } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'info';
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useCRM } from '../context/CRMContext';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Plus, Search, Filter, MoreVertical, Phone, Mail, Bot, User, Loader } from 'lucide-react';
+import { Plus, Search, ListFilter as Filter, MoveVertical as MoreVertical, Phone, Mail, Bot, User, Loader } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '../hooks/useToast';
