@@ -4,18 +4,32 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { motion } from 'motion/react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Bot, User, Phone, Mail, Zap, DollarSign, Calendar, CreditCard } from 'lucide-react';
+import { Bot, User, Phone, Mail, Zap, DollarSign, Calendar, CreditCard, Loader } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../hooks/useToast';
+import { ToastContainer } from '../components/Toast';
 
 export const Kanban: React.FC = () => {
   const { leads, columns, updateLeadStatus, fetchLeads } = useCRM();
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const { toasts, removeToast, success, error } = useToast();
 
   useEffect(() => {
-    fetchLeads();
+    const loadLeads = async () => {
+      setIsLoading(true);
+      try {
+        await fetchLeads();
+      } catch (err) {
+        error('Erro ao carregar leads');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadLeads();
   }, []);
 
-  const onDragEnd = (result: DropResult) => {
+  const onDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId } = result;
 
     if (!destination) return;
@@ -27,18 +41,34 @@ export const Kanban: React.FC = () => {
       return;
     }
 
-    updateLeadStatus(draggableId, destination.droppableId as LeadStatus);
+    try {
+      await updateLeadStatus(draggableId, destination.droppableId as LeadStatus);
+      success('Lead movido com sucesso');
+    } catch (err) {
+      error('Erro ao mover lead');
+    }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-neutral-100">
+        <div className="text-center">
+          <Loader className="w-8 h-8 animate-spin text-emerald-600 mx-auto mb-3" />
+          <p className="text-neutral-600 font-medium">Carregando leads...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="flex-1 flex flex-col h-full bg-neutral-100 p-6 overflow-hidden"
     >
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Pipeline Comercial</h1>
-        <button 
+        <button
           onClick={() => navigate('/leads')}
           className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
         >
@@ -153,6 +183,7 @@ export const Kanban: React.FC = () => {
           })}
         </div>
       </DragDropContext>
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </motion.div>
   );
 };

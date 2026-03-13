@@ -2,37 +2,74 @@ import React, { useState, useEffect } from 'react';
 import { useCRM } from '../context/CRMContext';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Plus, Search, Filter, MoreVertical, Phone, Mail, Bot, User } from 'lucide-react';
+import { Plus, Search, Filter, MoreVertical, Phone, Mail, Bot, User, Loader } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useToast } from '../hooks/useToast';
+import { ToastContainer } from '../components/Toast';
 
 export const LeadsList: React.FC = () => {
   const { leads, addLead, fetchLeads } = useCRM();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [newLead, setNewLead] = useState({ name: '', phone: '', email: '', source: 'Manual' });
+  const { toasts, removeToast, success, error } = useToast();
 
   useEffect(() => {
-    fetchLeads();
+    const loadLeads = async () => {
+      setIsLoading(true);
+      try {
+        await fetchLeads();
+      } catch (err) {
+        error('Erro ao carregar leads');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadLeads();
   }, []);
 
-  const filteredLeads = leads.filter(l => 
-    l.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredLeads = leads.filter(l =>
+    l.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     l.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     l.phone.includes(searchTerm)
   );
 
-  const handleAddLead = (e: React.FormEvent) => {
+  const handleAddLead = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newLead.name || !newLead.phone) return;
-    addLead({ ...newLead, status: 'new' });
-    setIsModalOpen(false);
-    setNewLead({ name: '', phone: '', email: '', source: 'Manual' });
+    if (!newLead.name || !newLead.phone) {
+      error('Nome e telefone são obrigatórios');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await addLead({ ...newLead, status: 'new' });
+      success('Lead criado com sucesso');
+      setIsModalOpen(false);
+      setNewLead({ name: '', phone: '', email: '', source: 'Manual' });
+    } catch (err) {
+      error('Erro ao criar lead');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full bg-neutral-50">
+        <div className="text-center">
+          <Loader className="w-8 h-8 animate-spin text-emerald-600 mx-auto mb-3" />
+          <p className="text-neutral-600 font-medium">Carregando leads...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="p-8 overflow-y-auto h-full bg-neutral-50"
@@ -42,7 +79,7 @@ export const LeadsList: React.FC = () => {
           <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Gestão de Leads</h1>
           <p className="text-neutral-500 mt-1">Acompanhe todos os contatos e atendimentos.</p>
         </div>
-        <button 
+        <button
           onClick={() => setIsModalOpen(true)}
           className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-medium transition-colors shadow-sm flex items-center gap-2"
         >
@@ -183,17 +220,19 @@ export const LeadsList: React.FC = () => {
                 </select>
               </div>
               <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-neutral-600 hover:bg-neutral-100 rounded-lg font-medium transition-colors">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-neutral-600 hover:bg-neutral-100 rounded-lg font-medium transition-colors" disabled={isSaving}>
                   Cancelar
                 </button>
-                <button type="submit" className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors shadow-sm">
-                  Salvar Lead
+                <button type="submit" className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled={isSaving}>
+                  {isSaving && <Loader className="w-4 h-4 animate-spin" />}
+                  {isSaving ? 'Salvando...' : 'Salvar Lead'}
                 </button>
               </div>
             </form>
           </motion.div>
         </div>
       )}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </motion.div>
   );
 };
